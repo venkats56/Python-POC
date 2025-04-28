@@ -1,0 +1,39 @@
+pipeline {
+    agent any
+
+    environment {
+        AZURE_SUBSCRIPTION_ID = '9d160b65-2e55-4165-ad1d-569fc4b41668'
+        DEPLOYMENT_NAME = 'full-aks-deployment'
+    }
+
+    stages {
+        stage('Azure Login') {
+            steps {
+                withCredentials([azureServicePrincipal('AZURE_CREDENTIALS')]) {
+                    sh '''
+                        az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID
+                        az account set --subscription $AZURE_SUBSCRIPTION_ID
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy Full Infrastructure') {
+            steps {
+                sh '''
+                    az deployment sub create \
+                      --name $DEPLOYMENT_NAME \
+                      --location westus \
+                      --template-file IAC/main.bicep
+                '''
+            }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
+        }
+    }
+}
+
