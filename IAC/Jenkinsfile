@@ -2,10 +2,12 @@ pipeline {
     agent any
 
     environment {
-        AZURE_CREDENTIALS_ID = '9f37f950-6239-483d-9223-a1c7a1b0f3e7' // Jenkins Azure credentials ID
+        AZURE_CREDENTIALS_ID = '9f37f950-6239-483d-9223-a1c7a1b0f3e7'  // Jenkins Azure credentials ID
         AZURE_SUBSCRIPTION_ID = '9d160b65-2e55-4165-ad1d-569fc4b41668'
+        RESOURCE_GROUP = 'Python_POC'  // Define the name of the new resource group
         DEPLOYMENT_NAME = 'test'
-        BICEP_FILE = 'IAC/main.bicep'  
+        BICEP_FILE = 'aks/main.bicep'
+        LOCATION = 'westus'  // Specify the location of the new RG
     }
 
     stages {
@@ -23,18 +25,42 @@ pipeline {
             }
         }
 
-        stage('Deploy Bicep') {
+        stage('Create Resource Group') {
             steps {
                 sh '''
                     az account set --subscription $AZURE_SUBSCRIPTION_ID
 
+                    # Check if the Resource Group exists and create it if not
+                    if ! az group exists --name $RESOURCE_GROUP; then
+                        echo "Resource Group does not exist. Creating it now..."
+                        az group create --name $RESOURCE_GROUP --location $LOCATION
+                    else
+                        echo "Resource Group already exists."
+                    fi
+                '''
+            }
+        }
+
+        stage('Deploy Bicep') {
+            steps {
+                sh '''
+                    # Deploy the Bicep template to the Resource Group
                     az deployment group create \
+                        --resource-group $RESOURCE_GROUP \
                         --name $DEPLOYMENT_NAME \
                         --template-file $BICEP_FILE
                 '''
             }
         }
     }
+
+    post {
+        always {
+            cleanWs()  // Clean up the workspace
+        }
+    }
+}
+
 
     post {
         always {
