@@ -6,7 +6,7 @@ pipeline {
         AZURE_SUBSCRIPTION_ID = '9d160b65-2e55-4165-ad1d-569fc4b41668'
         RESOURCE_GROUP = 'Python_POC'  // Define the name of the new resource group
         DEPLOYMENT_NAME = 'test'
-        BICEP_FILE = 'aks/main.bicep'
+        BICEP_FILE = 'IAC/main.bicep'
         LOCATION = 'westus'  // Specify the location of the new RG
     }
 
