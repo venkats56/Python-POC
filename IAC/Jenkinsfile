@@ -2,29 +2,35 @@ pipeline {
     agent any
 
     environment {
+        AZURE_CREDENTIALS_ID = '9f37f950-6239-483d-9223-a1c7a1b0f3e7' // Jenkins Azure credentials ID
         AZURE_SUBSCRIPTION_ID = '9d160b65-2e55-4165-ad1d-569fc4b41668'
-        DEPLOYMENT_NAME = 'full-aks-deployment'
+        DEPLOYMENT_NAME = 'test'
+        BICEP_FILE = 'IAC/main.bicep'  
     }
 
     stages {
-        stage('Azure Login') {
+
+        stage('Login to Azure') {
             steps {
-                withCredentials([azureServicePrincipal('AZURE_CREDENTIALS')]) {
+                withCredentials([azureServicePrincipal(credentialsId: AZURE_CREDENTIALS_ID)]) {
                     sh '''
-                        az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID
-                        az account set --subscription $AZURE_SUBSCRIPTION_ID
+                        az login --service-principal \
+                            --username $AZURE_CLIENT_ID \
+                            --password $AZURE_CLIENT_SECRET \
+                            --tenant $AZURE_TENANT_ID
                     '''
                 }
             }
         }
 
-        stage('Deploy Full Infrastructure') {
+        stage('Deploy Bicep') {
             steps {
                 sh '''
-                    az deployment sub create \
-                      --name $DEPLOYMENT_NAME \
-                      --location westus \
-                      --template-file IAC/main.bicep
+                    az account set --subscription $AZURE_SUBSCRIPTION_ID
+
+                    az deployment group create \
+                        --name $DEPLOYMENT_NAME \
+                        --template-file $BICEP_FILE
                 '''
             }
         }
@@ -36,4 +42,5 @@ pipeline {
         }
     }
 }
+
 
